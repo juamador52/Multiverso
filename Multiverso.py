@@ -2,8 +2,9 @@
 #separandolas por _; para variables si en minuscula separando por _
 
 class Nodo:
-    def __init__(self, dato):
+    def __init__(self, dato=None, vacio=True):
         self.Dato = dato
+        self.Vacio = vacio
         self.Siguiente = None
         self.Anterior = None
         self.Orb_Anterior = None
@@ -17,33 +18,25 @@ class Orbita:
         self.Capacidad = capacidad
         self.Nodos = []
         self.Final = None
+        self.Tamaño = 0  #para saber la cantidad de nodos 
         #Debe iniciar con 3 nodos independiente de la capacidad
         #Asi se evita punteros en ambas direcciones
         #evito llamar a agregar nodo, ya que este reemplaza primero los
         #nodos None, falta manejar este caso para el contador
         for _ in range(3):
-            nuevo = Nodo(None)
-            if self.Nodos:
-                primero = self.Nodos[0]
-                ultimo = self.Final
-                nuevo.Anterior = ultimo
-                nuevo.Siguiente = primero
-                ultimo.Siguiente = nuevo
-                primero.Anterior = nuevo
-            self.Nodos.append(nuevo)
-            self.Final = nuevo
+             self.Agregar_Nodo(None, True)
 
-    def Agregar_Nodo(self, dato):
-        for n in self.Nodos:
-            if n.Dato is None:
-                n.Dato = dato
-                return True
-
+    def Agregar_Nodo(self, dato, vacio=False):
+        if not vacio:
+            for n in self.Nodos:
+                if n.Vacio:
+                    n.Dato = dato
+                    n.Vacio = False
+                    return True
+                
         if len(self.Nodos) >= self.Capacidad:
-            return False
-        
-        nuevo = Nodo(dato)
-        # para el primer valor si se "rompe" la regla con los punteros
+                return False
+        nuevo = Nodo(dato, vacio)
         if not self.Nodos:
             pass
         
@@ -54,9 +47,10 @@ class Orbita:
             nuevo.Siguiente = primero
             ultimo.Siguiente = nuevo
             primero.Anterior = nuevo
-            
+
         self.Final = nuevo
         self.Nodos.append(nuevo)
+        self.Tamaño = len(self.Nodos)
         return True
 
     #le ponemos posicion por defecto?
@@ -102,24 +96,51 @@ class Sistema_Orbitas:
             self.Orbitas[-1].Agregar_Nodo(dato)
         self.Contador += 1
    #---------------------------------------------------                      
- #Por el momento lo manejare con dos funciones luego creo una sola con
-# las excepciones necesarias
-    def Obtener_Por_Id(self, id_nodo):
-        if id_nodo < 1 or id_nodo > self.Contador:
-            return None
-        contador = 0
-        for o in self.Orbitas:
-            for n in o.Nodos:
-                contador += 1
-                if contador == id_nodo:
-                    return n
-        return None
-
-    def Obtener(self, num_orbita, pos):
+    def Obtener_Id(self, num_orbita, posicion):
         if num_orbita < 0 or num_orbita >= len(self.Orbitas):
-            return None  #o lanzo error?
+            raise ValueError("el número de órbita no es válido")
+
         orb = self.Orbitas[num_orbita]
-        return orb.Obtener_Nodo(pos)
+        if not orb.Nodos:
+            raise ValueError("la órbita está vacía")
+
+        indice = posicion % len(orb.Nodos)
+
+        id_base = sum(len(o.Nodos) for o in self.Orbitas[:num_orbita])
+        id_final = id_base + indice + 1  # +1 para que empiece en 1
+        return id_final
+        
+
+
+    def Convertir_Id(self, id_nodo):
+        if id_nodo < 1 or id_nodo > self.Contador:
+            raise ValueError("el id indicado no existe")
+
+        acumulado = 0
+        for i, orb in enumerate(self.Orbitas):
+            if id_nodo <= acumulado + len(orb.Nodos):
+                pos = id_nodo - acumulado - 1
+                return i, pos
+            acumulado += len(orb.Nodos)
+        raise ValueError("id fuera de rango")
+
+
+    def Obtener(self, *args):
+        if len(args) == 1:
+            id_nodo = args[0]
+            num_orbita, pos = self.Convertir_Id(id_nodo)
+            return self.Obtener(num_orbita, pos)
+
+        elif len(args) == 2:
+            num_orbita, pos = args
+            if num_orbita < 0 or num_orbita >= len(self.Orbitas):
+                raise ValueError("el número de órbita no es válido")
+            orb = self.Orbitas[num_orbita]
+            return orb.Obtener_Nodo(pos)
+
+        else:
+            raise ValueError("parámetros inválidos")
+        
 #------------------------------------------------------------------
     
     def Eliminar_Orbita(self, num_orbita):
@@ -136,7 +157,7 @@ class Sistema_Orbitas:
 #otra cosa este metodo aun falta corregirle para evitar que pueda dejar
 #orbitas con menos de 3 elementos
     def Eliminar_Nodo(self, id_nodo):
-        nodo_obj = self.Obtener_Por_Id(id_nodo)
+        nodo_obj = self.Obtener(id_nodo)
         if not nodo_obj:
             return False
         for o in self.Orbitas:
@@ -169,7 +190,7 @@ print(sistema.Mostrar())
 print("---------------------------------------------------")
     
 # obtener un nodo por id
-nodo_5 = sistema.Obtener_Por_Id(5)
+nodo_5 = sistema.Obtener(5)
 print("dato:", nodo_5.Dato)
 
     
@@ -188,3 +209,4 @@ print("-------------------------------------------------")
     
 
  
+
