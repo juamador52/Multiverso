@@ -143,70 +143,203 @@ class Sistema_Orbitas:
         
 #------------------------------------------------------------------
     
-    def Eliminar_Orbita(self, num_orbita):
-        if num_orbita < 0 or num_orbita >= len(self.Orbitas):
-            return
-        pass #falta por implementar, luego pienso como manejar el cambio
-                #con el contador
-    
- #Pienso hacerlo tambien por id_nodo o numero de orbita y posicion
-    
-#por cierto manejo un valor por defecto, osea que si no se pasa parrametro
-#que elimine el ultimo de la ultima orbita o asi?
-    
-#otra cosa este metodo aun falta corregirle para evitar que pueda dejar
-#orbitas con menos de 3 elementos
-    def Eliminar_Nodo(self, id_nodo):
-        nodo_obj = self.Obtener(id_nodo)
-        if not nodo_obj:
-            return False
-        for o in self.Orbitas:
-            if nodo_obj in o.Nodos:
-                o.Nodos.remove(nodo_obj)
-                if o.Nodos:
-                    o.Final = o.Nodos[-1]
-                else:
-                    o.Final = None
-                self.Contador -= 1
-                return True
-        return False
+    def Eliminar_Orbita(self, num_orbita=-1):
+        if not self.Orbitas:
+            return False  
 
+        total_orbitas = len(self.Orbitas)
+    
+        if num_orbita < 0:
+            num_orbita = total_orbitas - 1
+
+        if num_orbita >= total_orbitas:
+            raise ValueError("el número de órbita no es válido")
+
+        # actualiza punteros
+        if num_orbita > 0:
+            orb_anterior = self.Orbitas[num_orbita - 1]
+            orb_anterior.Final.Orb_Siguiente = None
+
+        # eliminar las orbitas siguientes
+        for orb in self.Orbitas[num_orbita:]:
+            self.Contador -= len(orb.Nodos)  # descontar todos los nodos
+        self.Orbitas = self.Orbitas[:num_orbita]
+        return True
+    
+    def Eliminar_Nodo(self, id_nodo):
+        num_orbita, pos = self.Convertir_Id(id_nodo)
+        orb = self.Orbitas[num_orbita]
+        nodo = orb.Obtener_Nodo(pos)
+
+        # si tiene 3 o menos nodos solo lo marcamos vacio
+        if len(orb.Nodos) <= 3:#Sera que pongo un error si ya esta vacio?
+            if all(n.Vacio for n in orb.Nodos[:3]):
+                return "la orbita está vacía"
+            nodo.Dato = None
+            nodo.Vacio = True
+            #no toca mover los punteros ya que solo cambie dato y vacio
+            return True
+
+        # si hay más de 3 nodos elimino normal
+        orb.Nodos.pop(pos)
+        orb.Final = orb.Nodos[-1] if orb.Nodos else None
+        orb.Tamaño = len(orb.Nodos)
+
+        # actualizo punteros de la orbita
+        if orb.Nodos:
+            for i, n in enumerate(orb.Nodos):
+                n.Siguiente = orb.Nodos[(i + 1) % len(orb.Nodos)]
+                n.Anterior = orb.Nodos[(i - 1) % len(orb.Nodos)]
+            orb.Final = orb.Nodos[-1]
+
+        # punteros hacia otras orbitas
+        if num_orbita > 0:
+            orb_anterior = self.Orbitas[num_orbita - 1]
+            orb.Nodos[0].Orb_Anterior = orb_anterior.Final
+            orb_anterior.Final.Orb_Siguiente = orb.Nodos[0]
+        else:
+            orb.Nodos[0].Orb_Anterior = None
+
+        if num_orbita + 1 < len(self.Orbitas):
+            orb_siguiente = self.Orbitas[num_orbita + 1]
+            orb.Final.Orb_Siguiente = orb_siguiente.Nodos[0]
+            orb_siguiente.Nodos[0].Orb_Anterior = orb.Final
+        else:
+            orb.Final.Orb_Siguiente = None
+
+        self.Contador -= 1
+        return True
+    
     def Mostrar(self):
         texto = ""
         for i, o in enumerate(self.Orbitas):
             texto += f"orbita {i} (cap {o.Capacidad}): {o.Mostrar()}\n"
         return texto.strip()
 
+    #si algo se podria usar para mostrar el camino entre nodos
+    def Recorrer(self, id_origen, id_destino, impresion=True):
+        origen = self.Obtener(id_origen)
+        destino = self.Obtener(id_destino)
+
+        recorrido = []
+        nodo_actual = origen
+        avanzar = id_destino > id_origen  # direcion del recorrido
+
+        while True:
+            #para añadir los nodos recorridos
+            if nodo_actual == origen or nodo_actual == destino:
+                recorrido.append(f"[{nodo_actual.Dato}]")
+            else:
+                recorrido.append(str(nodo_actual.Dato))
+
+            if nodo_actual == destino:
+                break
+
+            if avanzar:
+                if nodo_actual.Orb_Siguiente:
+                    nodo_actual = nodo_actual.Orb_Siguiente
+                else:
+                    nodo_actual = nodo_actual.Siguiente
+            else:
+                if nodo_actual.Orb_Anterior:
+                    nodo_actual = nodo_actual.Orb_Anterior
+                else:
+                    nodo_actual = nodo_actual.Siguiente
+
+        if impresion:
+            print(" -> ".join(recorrido))
+        return recorrido
 
 
 # ------------------ prueba ------------------
+
 sistema = Sistema_Orbitas(3)
-    
+
+# 9 elementos 
 for i in range(9):
     sistema.Insertar(i)
-    
-print("estado inicia del sistema:")
+
+print("Estado inicial del sistema:")
 print(sistema.Mostrar())
 print("---------------------------------------------------")
-    
+
 # obtener un nodo por id
-nodo_5 = sistema.Obtener(5)
-print("dato:", nodo_5.Dato)
+print("Obtener nodo por id 5:")
+try:
+    nodo_5 = sistema.Obtener(5)
+    print("Dato nodo 5:", nodo_5.Dato)
+except ValueError as e:
+    print(e)
+print("---------------------------------------------------")
 
-    
-# obtener un nodo por orbita y posicion
-nodo_2_1 = sistema.Obtener(2, 1)
-print("dato del nodo 2-1:", nodo_2_1.Dato)
-print("--------------------------------------------")
-    
-# eliminando un nodo
-print("eliminando nodo 3...")
-if sistema.Eliminar_Nodo(3):
-    print("nodo eliminado correctamente")
-print("estado despues de eliminar nodo 3:")
+# obtener un nodo orbita,posicion
+print("Obtener nodo órbita 2, posición 1:")
+try:
+    nodo_2_1 = sistema.Obtener(2, 1)
+    print("Dato nodo 2-1:", nodo_2_1.Dato)
+except ValueError as e:
+    print(e)
+print("---------------------------------------------------")
+
+# eliminar un nodo
+print("Eliminando nodo 3:")
+res = sistema.Eliminar_Nodo(3)
+print("Resultado:", res)
+print("Estado después de eliminar nodo 3:")
 print(sistema.Mostrar())
-print("-------------------------------------------------")
-    
+print("---------------------------------------------------")
 
- 
+# eliminar un nodo >3
+print("Eliminando nodo 1 (órbita inicial de 3 nodos):")
+res = sistema.Eliminar_Nodo(1)
+print("Resultado:", res)
+print(sistema.Mostrar())
+print("---------------------------------------------------")
 
+# eliminar varios nodos hasta que la obita quede vacia
+print("Eliminando nodos 2 y 3 (de la órbita inicial):")
+print("Eliminar 2:", sistema.Eliminar_Nodo(2))
+print("Eliminar 3:", sistema.Eliminar_Nodo(3))
+print(sistema.Mostrar())
+print("---------------------------------------------------")
+
+# recorrer
+print("Recorrer de nodo 4 a nodo 7 (distintas órbitas):")
+sistema.Recorrer(4, 7)
+print("---------------------------------------------------")
+
+# recorrer de manera circular
+print("Recorrer de nodo 7 a nodo 4 (misma orbita):")
+sistema.Recorrer(7, 4)
+print("---------------------------------------------------")
+
+# recorrer hacia atras
+print("Recorrer de nodo 7 a nodo 4 ( orbita diferente):")
+sistema.Recorrer(8, 2)
+print("---------------------------------------------------")
+
+# intentar obtener nodo con id invalido
+print("Intentar obtener nodo id 20 (fuera de rango):")
+try:
+    sistema.Obtener(20)
+except ValueError as e:
+    print("Error:", e)
+print("---------------------------------------------------")
+
+# eliminar orbita
+print("Eliminar última órbita:")
+sistema.Eliminar_Orbita()
+print(sistema.Mostrar())
+print("---------------------------------------------------")
+
+# eliminar orbita
+print("Eliminar órbita 0 y todas las posteriores:")
+sistema.Eliminar_Orbita(0)
+print(sistema.Mostrar())
+print("---------------------------------------------------")
+
+# insertar después de eliminar
+print("Insertar nodo 100 después de eliminar órbitas:")
+sistema.Insertar(100)
+print(sistema.Mostrar())
+print("---------------------------------------------------")
