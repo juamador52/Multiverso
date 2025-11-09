@@ -88,6 +88,10 @@ class Sistema_Orbitas:
         self.Orbitas.append(nueva)
 
     def Insertar(self, dato):
+        if not self.Orbitas:
+        #si borra las orbitas  crea una nueva con la capacidad
+            self.Crear_Orbita(self.Capacidad)
+        
         actual = self.Orbitas[-1]
         if not actual.Agregar_Nodo(dato):
             # si se llena crea una nueva orbita con capcidad+1
@@ -149,7 +153,7 @@ class Sistema_Orbitas:
 
         total_orbitas = len(self.Orbitas)
     
-        if num_orbita < 0:
+        if num_orbita < 0:#si pasan un negativo simplemente borro la ultima
             num_orbita = total_orbitas - 1
 
         if num_orbita >= total_orbitas:
@@ -249,8 +253,6 @@ class Sistema_Orbitas:
         if impresion:
             print(" -> ".join(recorrido))
         return recorrido
-
-
 # ------------------ prueba ------------------
 
 sistema = Sistema_Orbitas(3)
@@ -343,3 +345,4 @@ print("Insertar nodo 100 después de eliminar órbitas:")
 sistema.Insertar(100)
 print(sistema.Mostrar())
 print("---------------------------------------------------")
+
