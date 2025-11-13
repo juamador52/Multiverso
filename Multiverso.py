@@ -21,8 +21,6 @@ class Orbita:
         self.Tamaño = 0  #para saber la cantidad de nodos 
         #Debe iniciar con 3 nodos independiente de la capacidad
         #Asi se evita punteros en ambas direcciones
-        #evito llamar a agregar nodo, ya que este reemplaza primero los
-        #nodos None, falta manejar este caso para el contador
         for _ in range(3):
              self.Agregar_Nodo(None, True)
 
@@ -128,7 +126,7 @@ class Sistema_Orbitas:
             acumulado += len(orb.Nodos)
         raise ValueError("id fuera de rango")
 
-
+#por ahora sera la unica que use tanto id como posicion orbita para funcionar
     def Obtener(self, *args):
         if len(args) == 1:
             id_nodo = args[0]
@@ -216,7 +214,7 @@ class Sistema_Orbitas:
     
     def Mostrar(self):
         texto = ""
-        for i, o in enumerate(self.Orbitas):
+        for i, o in enumerate(self.Orbitas): 
             texto += f"orbita {i} (cap {o.Capacidad}): {o.Mostrar()}\n"
         return texto.strip()
 
@@ -345,4 +343,5 @@ print("Insertar nodo 100 después de eliminar órbitas:")
 sistema.Insertar(100)
 print(sistema.Mostrar())
 print("---------------------------------------------------")
+
 
