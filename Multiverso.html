@@ -47,19 +47,14 @@
       cursor: grabbing;
     }
 
-    
     #button-container {
-      
       position: fixed;
       top: 50%; 
       right: 30px; 
       transform: translateY(-50%); 
-      
       display: flex;
       flex-direction: column; 
       gap: 20px; 
-      
-      
       z-index: 20;  
     }
 
@@ -74,26 +69,17 @@
       cursor: pointer;
       text-transform: uppercase;
       letter-spacing: 1px;
-      
-      
       transition: all 0.3s ease-in-out;
-      
-      
       animation: glow-button 1.5s infinite alternate;
     }
 
     .glow-button:hover {
       background-color: #66aaff;
       color: #000;
-      
-      
       box-shadow: 0 0 20px #66aaff, 0 0 40px #66aaff, 0 0 60px #66aaff;
-      
-      
       animation: none;  
     }
 
-    
     @keyframes glow-button {
       from {
         box-shadow: 0 0 5px #66aaff, 0 0 10px #66aaff;
@@ -105,7 +91,6 @@
       }
     }
 
-    
     #custom-prompt-overlay {
       position: fixed;
       top: 0;
@@ -173,20 +158,56 @@
       background: #333;
     }
 
+    #console-output {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      max-width: 400px;
+      max-height: 200px;
+      background: rgba(0, 0, 0, 0.8);
+      border: 1px solid #66aaff;
+      border-radius: 8px;
+      padding: 10px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 0.9rem;
+      z-index: 20;
+      box-shadow: 0 0 20px #66aaff;
+    }
+
+    #console-output::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #console-output::-webkit-scrollbar-track {
+      background: #111;
+    }
+
+    #console-output::-webkit-scrollbar-thumb {
+      background: #66aaff;
+      border-radius: 4px;
+    }
+
+    .console-line {
+      margin: 2px 0;
+      color: #66aaff;
+    }
   </style>
 </head>
 <body>
   <h1>🌌 Multiverso: Órbitas 🌌</h1>
+  
   <div id="button-container">
-    
     <button id="btn-insertar" class="glow-button">Insertar</button>
     <button id="btn-eliminar" class="glow-button">Eliminar</button>
     <button id="btn-buscar" class="glow-button">Buscar</button>
+    <button id="btn-obtener-id" class="glow-button">Obtener ID</button>
   </div>
 
   <div id="canvas-container"></div>
 
-  
+  <div id="console-output"></div>
+
   <div id="custom-prompt-overlay">
     <div id="custom-prompt-box">
       <label id="prompt-label">Valor:</label>
@@ -199,204 +220,256 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   
   <script>
-    
-    
+    function consoleLog(mensaje) {
+      const consoleOutput = document.getElementById('console-output');
+      const line = document.createElement('div');
+      line.className = 'console-line';
+      line.textContent = mensaje;
+      consoleOutput.appendChild(line);
+      consoleOutput.scrollTop = consoleOutput.scrollHeight;
+      console.log(mensaje);
+    }
     
     class Nodo {
-        constructor(dato) {
-            this.Dato = dato;
-            this.Siguiente = null;  
-            this.Anterior = null;
-            this.Orb_Anterior = null;
-            this.Orb_Siguiente = null;
-            this.Mesh_3D = null; 
-        }
+      constructor(dato = null, vacio = true) {
+        this.Dato = dato;
+        this.Vacio = vacio;
+        this.Siguiente = null;
+        this.Anterior = null;
+        this.Orb_Anterior = null;
+        this.Orb_Siguiente = null;
+        this.Mesh_3D = null;
+      }
     }
-    
+
     class Orbita {
-        constructor(capacidad = 3) {
-            if (capacidad <= 2) {
-                throw new Error("La capacidad debe ser mayor a 2");
-            }
-            this.Capacidad = capacidad;
-            this.Nodos = [];
-            this.Final = null;
-            
-            for (let i = 0; i < 3; i++) {
-                const nuevo = new Nodo(null);
-                if (this.Nodos.length > 0) {
-                    const primero = this.Nodos[0];
-                    const ultimo = this.Final;
-                    nuevo.Anterior = ultimo;
-                    nuevo.Siguiente = primero;
-                    ultimo.Siguiente = nuevo;
-                    primero.Anterior = nuevo;
-                }
-                this.Nodos.push(nuevo);
-                this.Final = nuevo;
-            }
+      constructor(capacidad = 3) {
+        if (capacidad <= 2) {
+          throw new Error("La capacidad debe ser mayor a 2");
         }
-    
-        Agregar_Nodo(dato) {
-            for (const n of this.Nodos) {
-                if (n.Dato === null) {  
-                    n.Dato = dato;
-                    return true;
-                }
-            }
-            if (this.Nodos.length >= this.Capacidad) {
-                return false;
-            }
-    
-            const nuevo = new Nodo(dato);
-            if (this.Nodos.length === 0) {
-                
-            } else {
-                const primero = this.Nodos[0];
-                const ultimo = this.Final;
-                nuevo.Anterior = ultimo;
-                nuevo.Siguiente = primero;
-                ultimo.Siguiente = nuevo;
-                primero.Anterior = nuevo;
-            }
-    
-            this.Final = nuevo;
-            this.Nodos.push(nuevo);
-            return true;
+        this.Capacidad = capacidad;
+        this.Nodos = [];
+        this.Final = null;
+        this.Tamaño = 0;
+        for (let i = 0; i < 3; i++) {
+          this.Agregar_Nodo(null, true);
         }
-    
-        Obtener_Nodo(posicion) {
-            if (this.Nodos.length === 0) {
-                return null;
+      }
+
+      Agregar_Nodo(dato, vacio = false) {
+        if (!vacio) {
+          for (const n of this.Nodos) {
+            if (n.Vacio) {
+              n.Dato = dato;
+              n.Vacio = false;
+              return true;
             }
-            const len = this.Nodos.length;
-            posicion = ((posicion % len) + len) % len;
-            
-            return this.Nodos[posicion];
+          }
         }
-    
-        Mostrar() {
-            const datos = this.Nodos.map(n => String(n.Dato));
-            return `[${datos.join(", ")}]`;
+        
+        if (this.Nodos.length >= this.Capacidad) {
+          return false;
         }
+        
+        const nuevo = new Nodo(dato, vacio);
+        if (this.Nodos.length === 0) {
+        } else {
+          const primero = this.Nodos[0];
+          const ultimo = this.Final;
+          nuevo.Anterior = ultimo;
+          nuevo.Siguiente = primero;
+          ultimo.Siguiente = nuevo;
+          primero.Anterior = nuevo;
+        }
+
+        this.Final = nuevo;
+        this.Nodos.push(nuevo);
+        this.Tamaño = this.Nodos.length;
+        return true;
+      }
+
+      Obtener_Nodo(posicion) {
+        if (this.Nodos.length === 0) {
+          return null;
+        }
+        posicion = ((posicion % this.Nodos.length) + this.Nodos.length) % this.Nodos.length;
+        return this.Nodos[posicion];
+      }
+
+      Mostrar() {
+        const datos = this.Nodos.map(n => String(n.Dato));
+        return `[${datos.join(", ")}]`;
+      }
     }
-    
-    
+
     class Sistema_Orbitas {
-        constructor(capacidad = 3) {
-            this.Orbitas = [];
-            this.Capacidad = capacidad;
-            this.Contador = 0;
-            try {
-                this.Crear_Orbita(capacidad);
-            } catch (e) {  
-                console.error("error al crear la orbita:", e.message);
-                throw e;  
-            }
+      constructor(capacidad = 3) {
+        this.Orbitas = [];
+        this.Capacidad = capacidad;
+        this.Contador = 0;
+        try {
+          this.Crear_Orbita(capacidad);
+        } catch (e) {
+          consoleLog("Error al crear la órbita: " + e.message);
+          throw e;
         }
-    
-        
-        Crear_Orbita(capacidad) {
-            const nueva = new Orbita(capacidad);
-    
-            if (this.Orbitas.length > 0) {
-                
-                const anterior = this.Orbitas[this.Orbitas.length - 1];
-                anterior.Final.Orb_Siguiente = nueva.Nodos[0];
-                nueva.Final.Orb_Anterior = anterior.Nodos[0];
-            }
-            
-            this.Orbitas.push(nueva); 
+      }
 
-            
-            
-            
-            const primera_orbita = this.Orbitas[0];
-            const ultima_orbita = this.Orbitas[this.Orbitas.length - 1]; 
+      Crear_Orbita(capacidad) {
+        const nueva = new Orbita(capacidad);
+        
+        if (this.Orbitas.length > 0) {
+          const anterior = this.Orbitas[this.Orbitas.length - 1];
+          anterior.Final.Orb_Siguiente = nueva.Nodos[0];
+          nueva.Final.Orb_Anterior = anterior.Nodos[0];
+        }
+        this.Orbitas.push(nueva);
+      }
 
-            
-            
-            ultima_orbita.Final.Orb_Siguiente = primera_orbita.Nodos[0];
-            
-            
-            
-            primera_orbita.Nodos[0].Orb_Anterior = ultima_orbita.Final;
-            
+      Insertar(dato) {
+        if (this.Orbitas.length === 0) {
+          this.Crear_Orbita(this.Capacidad);
         }
         
-    
-        Insertar(dato) {
-            const actual = this.Orbitas[this.Orbitas.length - 1];
-            if (!actual.Agregar_Nodo(dato)) {  
-                const nueva_cap = actual.Capacidad + 1;
-                this.Crear_Orbita(nueva_cap);
-                this.Orbitas[this.Orbitas.length - 1].Agregar_Nodo(dato);
-            }
-            this.Contador += 1;
+        const actual = this.Orbitas[this.Orbitas.length - 1];
+        if (!actual.Agregar_Nodo(dato)) {
+          const nueva_cap = actual.Capacidad + 1;
+          this.Crear_Orbita(nueva_cap);
+          this.Orbitas[this.Orbitas.length - 1].Agregar_Nodo(dato);
         }
+        this.Contador += 1;
+      }
+
+      Obtener_Id(num_orbita, posicion) {
+        if (num_orbita < 0 || num_orbita >= this.Orbitas.length) {
+          throw new Error("El número de órbita no es válido");
+        }
+
+        const orb = this.Orbitas[num_orbita];
+        if (orb.Nodos.length === 0) {
+          throw new Error("La órbita está vacía");
+        }
+
+        const indice = ((posicion % orb.Nodos.length) + orb.Nodos.length) % orb.Nodos.length;
+        const id_base = this.Orbitas.slice(0, num_orbita).reduce((sum, o) => sum + o.Nodos.length, 0);
+        const id_final = id_base + indice + 1;
+        return id_final;
+      }
+
+      Convertir_Id(id_nodo) {
+        if (id_nodo < 1 || id_nodo > this.Contador) {
+          throw new Error("El id indicado no existe");
+        }
+
+        let acumulado = 0;
+        for (let i = 0; i < this.Orbitas.length; i++) {
+          const orb = this.Orbitas[i];
+          if (id_nodo <= acumulado + orb.Nodos.length) {
+            const pos = id_nodo - acumulado - 1;
+            return [i, pos];
+          }
+          acumulado += orb.Nodos.length;
+        }
+        throw new Error("Id fuera de rango");
+      }
+
+      Obtener(...args) {
+        if (args.length === 1) {
+          const id_nodo = args[0];
+          const [num_orbita, pos] = this.Convertir_Id(id_nodo);
+          return this.Obtener(num_orbita, pos);
+        } else if (args.length === 2) {
+          const [num_orbita, pos] = args;
+          if (num_orbita < 0 || num_orbita >= this.Orbitas.length) {
+            throw new Error("El número de órbita no es válido");
+          }
+          const orb = this.Orbitas[num_orbita];
+          return orb.Obtener_Nodo(pos);
+        } else {
+          throw new Error("Parámetros inválidos");
+        }
+      }
+
+      Eliminar_Orbita(num_orbita = -1) {
+        if (this.Orbitas.length === 0) {
+          return false;
+        }
+
+        const total_orbitas = this.Orbitas.length;
         
-        Obtener_Por_Id(id_nodo) {
-            if (id_nodo < 1 || id_nodo > this.Contador) {
-                console.warn(`ID ${id_nodo} está fuera de rango (1 a ${this.Contador})`);
-                return null;
-            }
-            let contador_datos = 0;
-            for (const o of this.Orbitas) {
-                for (const n of o.Nodos) {
-                    if (n.Dato !== null) {
-                        contador_datos += 1;
-                        if (contador_datos === id_nodo) {  
-                            return n;
-                        }
-                    }
-                }
-            }
-            return null; 
+        if (num_orbita < 0) {
+          num_orbita = total_orbitas - 1;
         }
-    
-        Obtener(num_orbita, pos) {
-            if (num_orbita < 0 || num_orbita >= this.Orbitas.length) {
-                return null;
-            }
-            const orb = this.Orbitas[num_orbita];
-            return orb.Obtener_Nodo(pos);
+
+        if (num_orbita >= total_orbitas) {
+          throw new Error("El número de órbita no es válido");
         }
-    
-        Eliminar_Orbita(num_orbita) {
-            if (num_orbita < 0 || num_orbita >= this.Orbitas.length) {
-                return;
-            }
-            
+        if (num_orbita > 0) {
+          const orb_anterior = this.Orbitas[num_orbita - 1];
+          orb_anterior.Final.Orb_Siguiente = null;
         }
-    
-        Eliminar_Nodo(id_nodo) {
-            const nodo_obj = this.Obtener_Por_Id(id_nodo);
-            if (!nodo_obj) {  
-                console.error(`No se pudo eliminar el nodo con ID ${id_nodo}`);
-                return false;
-            }
-            
-            
-            
-            nodo_obj.Dato = null;
-            this.Contador -= 1;
-            return true;
+        for (let i = num_orbita; i < this.Orbitas.length; i++) {
+          this.Contador -= this.Orbitas[i].Nodos.length;
         }
-        
-        Mostrar() {
-            let texto = "";
-            this.Orbitas.forEach((o, i) => {
-                texto += `orbita ${i} (cap ${o.Capacidad}): ${o.Mostrar()}\n`;
-            });
-            return texto.trim();
+        this.Orbitas = this.Orbitas.slice(0, num_orbita);
+        return true;
+      }
+
+      Eliminar_Nodo(id_nodo) {
+        const [num_orbita, pos] = this.Convertir_Id(id_nodo);
+        const orb = this.Orbitas[num_orbita];
+        const nodo = orb.Obtener_Nodo(pos);
+        if (orb.Nodos.length <= 3) {
+          if (orb.Nodos.slice(0, 3).every(n => n.Vacio)) {
+            return "La órbita está vacía";
+          }
+          nodo.Dato = null;
+          nodo.Vacio = true;
+          this.Contador--;
+          return true;
         }
+        orb.Nodos.splice(pos, 1);
+        orb.Final = orb.Nodos.length > 0 ? orb.Nodos[orb.Nodos.length - 1] : null;
+        orb.Tamaño = orb.Nodos.length;
+        if (orb.Nodos.length > 0) {
+          for (let i = 0; i < orb.Nodos.length; i++) {
+            const n = orb.Nodos[i];
+            n.Siguiente = orb.Nodos[(i + 1) % orb.Nodos.length];
+            n.Anterior = orb.Nodos[(i - 1 + orb.Nodos.length) % orb.Nodos.length];
+          }
+          orb.Final = orb.Nodos[orb.Nodos.length - 1];
+        }
+        if (num_orbita > 0) {
+          const orb_anterior = this.Orbitas[num_orbita - 1];
+          orb.Nodos[0].Orb_Anterior = orb_anterior.Final;
+          orb_anterior.Final.Orb_Siguiente = orb.Nodos[0];
+        } else {
+          orb.Nodos[0].Orb_Anterior = null;
+        }
+
+        if (num_orbita + 1 < this.Orbitas.length) {
+          const orb_siguiente = this.Orbitas[num_orbita + 1];
+          orb.Final.Orb_Siguiente = orb_siguiente.Nodos[0];
+          orb_siguiente.Nodos[0].Orb_Anterior = orb.Final;
+        } else {
+          orb.Final.Orb_Siguiente = null;
+        }
+
+        this.Contador -= 1;
+        return true;
+      }
+
+      Mostrar() {
+        let texto = "";
+        this.Orbitas.forEach((o, i) => {
+          texto += `Órbita ${i} (cap ${o.Capacidad}): ${o.Mostrar()}\n`;
+        });
+        return texto.trim();
+      }
+
+      
     }
-    
-    
-    let sistema;
 
-    
-    
     function showCustomPrompt(label, defaultValue = "") {
       const overlay = document.getElementById('custom-prompt-overlay');
       const labelEl = document.getElementById('prompt-label');
@@ -420,7 +493,7 @@
         const onCancel = () => {
           overlay.style.display = 'none';
           cleanup();
-          resolve(null); 
+          resolve(null);
         };
 
         const onKey = (e) => {
@@ -428,12 +501,10 @@
           if (e.key === 'Escape') onCancel();
         };
 
-        
         okBtn.onclick = onOk;
         cancelBtn.onclick = onCancel;
         inputEl.onkeydown = onKey;
 
-        
         function cleanup() {
           okBtn.onclick = null;
           cancelBtn.onclick = null;
@@ -442,495 +513,489 @@
       });
     }
 
+    let sistema;
 
-    
     async function Iniciar_Sistema() {
-        console.log("Creando sistema de órbitas...");
-        let cantidad_orbitas_str = await showCustomPrompt("Capacidad 1ra órbita (mín 3):", 6);
-        if (cantidad_orbitas_str === null) cantidad_orbitas_str = "6"; 
-        
-        let cantidad_orbitas = parseInt(cantidad_orbitas_str) || 6;
-        if (cantidad_orbitas < 3) cantidad_orbitas = 3;
+      consoleLog("Creando sistema de órbitas...");
+      
+      let cantidad_orbitas_str = await showCustomPrompt("Capacidad 1ra órbita (mín 3):", "6");
+      if (cantidad_orbitas_str === null) cantidad_orbitas_str = "6";
+      
+      let cantidad_orbitas = parseInt(cantidad_orbitas_str) || 6;
+      if (cantidad_orbitas < 3) cantidad_orbitas = 3;
 
-        sistema = new Sistema_Orbitas(cantidad_orbitas);
-        
-        let cantidad_nodos_str = await showCustomPrompt("Nodos iniciales (mín 3):", 40);
-        if (cantidad_nodos_str === null) cantidad_nodos_str = "40"; 
-        
-        let cantidad_nodos = parseInt(cantidad_nodos_str) || 40;
-        if (cantidad_nodos < 3) cantidad_nodos = 3;
+      sistema = new Sistema_Orbitas(cantidad_orbitas);
+      
+      let cantidad_nodos_str = await showCustomPrompt("Nodos iniciales (mín 3):", "15");
+      if (cantidad_nodos_str === null) cantidad_nodos_str = "15";
+      
+      let cantidad_nodos = parseInt(cantidad_nodos_str) || 15;
+      if (cantidad_nodos < 3) cantidad_nodos = 3;
 
-        for (let i = 1; i <= cantidad_nodos; i++) {
-            sistema.Insertar(i);
-        }
-        console.log(sistema.Mostrar());
+      for (let i = 1; i <= cantidad_nodos; i++) {
+        sistema.Insertar(i);
+      }
+      
+      consoleLog("Sistema creado:");
+      consoleLog(sistema.Mostrar());
     }
 
-  </script>
-  
-  <script>
-    
-    
     window.onload = async () => {
-
-        
-        
-        
-        await Iniciar_Sistema();
-        
-        
-        let nodo_actual_id = 1; 
-        let animacion_busqueda_activa = false;
-        let nodo_seleccionado_mesh = null;
-        let color_original_seleccionado = null;
-        
-        
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+      await Iniciar_Sistema();
       
+      let nodo_actual_id = 1;
+      let animacion_busqueda_activa = false;
+      let nodo_seleccionado_mesh = null;
+      let color_original_seleccionado = null;
+      
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.getElementById('canvas-container').appendChild(renderer.domElement);
+    
+      const orbitGroup = new THREE.Group();
+      scene.add(orbitGroup);
+
+      const sunGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      const sunMaterial = new THREE.MeshBasicMaterial({ 
+        color: 0xffff00, 
+        emissive: 0xffff00, 
+        emissiveIntensity: 0.5 
+      });
+      const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+      
+      const colores_orbitas = [
+        0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 
+        0xff6b9d, 0xa8dadc, 0xc77dff, 0x90ee90
+      ];
+
+      const orbitas_3d = [];
+      
+      function Reconstruir_Escena_3D() {
+        consoleLog("Reconstruyendo escena 3D...");
         
-        const orbitGroup = new THREE.Group();
-        scene.add(orbitGroup);
+        while (orbitGroup.children.length > 0) {
+          const obj = orbitGroup.children[0];
+          orbitGroup.remove(obj);
 
-        
-        const sunGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00, emissive: 0xffff00, emissiveIntensity: 0.5 });
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        
-
-        
-        const colores_orbitas = [
-          0xff6b6b, 0x4ecdc4, 0xffe66d, 0x95e1d3, 
-          0xff6b9d, 0xa8dadc, 0xc77dff, 0x90ee90
-        ];
-
-        
-        const orbitas_3d = [];
-        
-        
-        function Reconstruir_Escena_3D() {
-            console.log("Reconstruyendo escena 3D...");
-            
-            while (orbitGroup.children.length > 0) {
-                const obj = orbitGroup.children[0];
-                orbitGroup.remove(obj);
-
-                
-                if (obj.geometry) obj.geometry.dispose();
-                if (obj.material) {
-                    if (Array.isArray(obj.material)) {
-                        obj.material.forEach(mat => mat.dispose());
-                    } else {
-                        obj.material.dispose();
-                    }
-                }
-            }
-            orbitas_3d.length = 0; 
-            
-            
-            let id_counter = 0;
-            nodo_seleccionado_mesh = null; 
-
-            
-            orbitGroup.add(sun);
-
-            
-            sistema.Orbitas.forEach((orbita, index) => {
-                const radio = 2 + (index * 1.8);
-                const color = colores_orbitas[index % colores_orbitas.length];
-                
-                
-                const geometry = new THREE.RingGeometry(radio - 0.05, radio + 0.05, 128);
-                const material = new THREE.MeshBasicMaterial({
-                    color: color,
-                    side: THREE.DoubleSide,
-                    transparent: true,
-                    opacity: 0.5
-                });
-                const ring = new THREE.Mesh(geometry, material);
-                ring.rotation.x = Math.PI / 2;
-                orbitGroup.add(ring);
-
-                
-                const planetas = [];
-                
-                const nodos_con_datos = orbita.Nodos.filter(n => n.Dato !== null);
-                const total_nodos_visibles = nodos_con_datos.length;
-                
-                let indice_visible = 0;
-
-                orbita.Nodos.forEach((nodo) => {
-                    if (nodo.Dato !== null) {
-                        
-                        id_counter++;
-                        
-                        const angulo_base = (Math.PI * 2) / total_nodos_visibles;
-
-                        
-                        const planeta_geo = new THREE.SphereGeometry(0.2, 16, 16);
-                        const planeta_mat = new THREE.MeshBasicMaterial({  
-                            color: color,
-                            transparent: true,
-                            opacity: 0.9
-                        });
-                        const planeta = new THREE.Mesh(planeta_geo, planeta_mat);
-                        
-                        
-                        planeta.nodo_id = id_counter;
-                        planeta.original_color = new THREE.Color(color);
-                        
-                        
-                        const angulo = angulo_base * indice_visible;
-                        planeta.position.x = Math.cos(angulo) * radio;
-                        planeta.position.z = Math.sin(angulo) * radio;
-                        
-                        orbitGroup.add(planeta);
-                        planetas.push(planeta);
-                        
-                        
-                        nodo.Mesh_3D = planeta;
-                        
-                        
-                        if (id_counter === nodo_actual_id) {
-                            planeta.material.color.set(0xffffff); 
-                            planeta.scale.set(1.5, 1.5, 1.5); 
-                            nodo_seleccionado_mesh = planeta;
-                            color_original_seleccionado = planeta.original_color;
-                        }
-                        
-                        indice_visible++;
-                    } else {
-                        
-                        nodo.Mesh_3D = null;
-                    }
-                });
-
-                
-                
-                if (planetas.length > 0) {
-                     orbitas_3d.push({
-                        radio: radio,
-                        planetas: planetas,
-                        velocidad: (index % 2 === 0) ? 0.3 : -0.3, 
-                        angulo_actual: 0
-                    });
-                }
-            });
-            console.log(sistema.Mostrar());
-        }
-        
-        
-        function Obtener_Mesh_Por_Id(id) {
-            for (const obj of orbitGroup.children) {
-                
-                if (obj.isMesh && obj.nodo_id === id) {
-                    return obj;
-                }
-            }
-            return null;
-        }
-
-        
-        function Highlight_Nodo(mesh) {
-            if (!mesh) return;
-            
-            
-            if (nodo_seleccionado_mesh && nodo_seleccionado_mesh !== mesh) {
-                
-                if (color_original_seleccionado) {
-                    nodo_seleccionado_mesh.material.color.set(color_original_seleccionado);
-                }
-                nodo_seleccionado_mesh.scale.set(1, 1, 1);
-            }
-
-            
-            nodo_seleccionado_mesh = mesh;
-            color_original_seleccionado = mesh.original_color;
-            mesh.material.color.set(0xffffff); 
-            mesh.scale.set(1.5, 1.5, 1.5); 
-            
-            
-            nodo_actual_id = mesh.nodo_id;
-        }
-
-        
-        async function Manejar_Insertar() {
-            console.log("Botón Insertar presionado");
-            
-            let dato_str = await showCustomPrompt("Dato a insertar:", sistema.Contador + 1);
-            if (dato_str === null) {
-                console.log("Inserción cancelada");
-                return;
-            }
-            
-            let dato = parseInt(dato_str);
-            if (isNaN(dato)) {
-                 console.log("Dato inválido, usando autoincremento");
-                 dato = sistema.Contador + 1; 
-            }
-            
-            sistema.Insertar(dato);
-            
-            
-            nodo_actual_id = sistema.Contador; 
-            
-            Reconstruir_Escena_3D(); 
-        }
-
-        async function Manejar_Eliminar() {
-            console.log("Botón Eliminar presionado");
-            if (sistema.Contador === 0) {
-                console.warn("No hay nodos para eliminar");
-                await showCustomPrompt("No hay nodos para eliminar."); 
-                return;
-            }
-            
-            let id_str = await showCustomPrompt(`ID del nodo a eliminar (1 a ${sistema.Contador}):`);
-            if (id_str === null) {
-                console.log("Eliminación cancelada");
-                return;
-            }
-
-            let id_nodo = parseInt(id_str);
-            if (isNaN(id_nodo)) {
-                console.error("ID inválido");
-                return;
-            }
-            
-            const exito = sistema.Eliminar_Nodo(id_nodo);
-            
-            
-            if (exito) {
-                if (id_nodo === nodo_actual_id) {
-                    nodo_actual_id = 1; 
-                } else if (id_nodo < nodo_actual_id) {
-                    nodo_actual_id--; 
-                }
-                
-                console.log(`Nodo ${id_nodo} eliminado (dato puesto a null)`);
-                Reconstruir_Escena_3D(); 
+          if (obj.geometry) obj.geometry.dispose();
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach(mat => mat.dispose());
             } else {
-                console.error(`No se pudo eliminar el nodo ${id_nodo}`);
+              obj.material.dispose();
             }
+          }
+        }
+        orbitas_3d.length = 0;
+        
+        let id_counter = 0;
+        nodo_seleccionado_mesh = null;
+
+        orbitGroup.add(sun);
+
+        sistema.Orbitas.forEach((orbita, index) => {
+          const todos_vacios = orbita.Nodos.every(n => n.Vacio);
+          if (todos_vacios) {
+            consoleLog(`Órbita ${index} omitida (todos los nodos son null)`);
+            return;
+          }
+          
+          const radio = 2 + (index * 1.8);
+          const color = colores_orbitas[index % colores_orbitas.length];
+          
+          const geometry = new THREE.RingGeometry(radio - 0.05, radio + 0.05, 128);
+          const material = new THREE.MeshBasicMaterial({
+            color: color,
+            side: THREE.DoubleSide,
+            transparent: true,
+            opacity: 0.5
+          });
+          const ring = new THREE.Mesh(geometry, material);
+          ring.rotation.x = Math.PI / 2;
+          orbitGroup.add(ring);
+
+          const planetas = [];
+          const nodos_visibles = orbita.Nodos.filter(n => !n.Vacio);
+          const total_nodos_visibles = nodos_visibles.length;
+          
+          let indice_visible = 0;
+
+          orbita.Nodos.forEach((nodo) => {
+            if (!nodo.Vacio) {
+              id_counter++;
+              
+              const angulo_base = (Math.PI * 2) / total_nodos_visibles;
+              const planeta_geo = new THREE.SphereGeometry(0.2, 16, 16);
+              const planeta_mat = new THREE.MeshBasicMaterial({  
+                color: color,
+                transparent: true,
+                opacity: 0.9
+              });
+              const planeta = new THREE.Mesh(planeta_geo, planeta_mat);
+              
+              planeta.nodo_id = id_counter;
+              planeta.original_color = new THREE.Color(color);
+              
+              const angulo = angulo_base * indice_visible;
+              planeta.position.x = Math.cos(angulo) * radio;
+              planeta.position.z = Math.sin(angulo) * radio;
+              
+              orbitGroup.add(planeta);
+              planetas.push(planeta);
+              
+              nodo.Mesh_3D = planeta;
+              
+              if (id_counter === nodo_actual_id) {
+                planeta.material.color.set(0xffffff);
+                planeta.scale.set(1.5, 1.5, 1.5);
+                nodo_seleccionado_mesh = planeta;
+                color_original_seleccionado = planeta.original_color;
+              }
+              
+              indice_visible++;
+            } else {
+              nodo.Mesh_3D = null;
+            }
+          });
+
+          if (planetas.length > 0) {
+            orbitas_3d.push({
+              radio: radio,
+              planetas: planetas,
+              velocidad: (index % 2 === 0) ? 0.3 : -0.3,
+              angulo_actual: 0
+            });
+          }
+        });
+        
+        consoleLog("Estado del sistema:");
+        consoleLog(sistema.Mostrar());
+      }
+      
+      function Obtener_Mesh_Por_Id(id) {
+        for (const obj of orbitGroup.children) {
+          if (obj.isMesh && obj.nodo_id === id) {
+            return obj;
+          }
+        }
+        return null;
+      }
+
+      function Highlight_Nodo(mesh) {
+        if (!mesh) return;
+        
+        if (nodo_seleccionado_mesh && nodo_seleccionado_mesh !== mesh) {
+          if (color_original_seleccionado) {
+            nodo_seleccionado_mesh.material.color.set(color_original_seleccionado);
+          }
+          nodo_seleccionado_mesh.scale.set(1, 1, 1);
+        }
+
+        nodo_seleccionado_mesh = mesh;
+        color_original_seleccionado = mesh.original_color;
+        mesh.material.color.set(0xffffff);
+        mesh.scale.set(1.5, 1.5, 1.5);
+        
+        nodo_actual_id = mesh.nodo_id;
+      }
+
+      async function Manejar_Insertar() {
+        consoleLog(">> Insertar nodo");
+        
+        let dato_str = await showCustomPrompt("Dato a insertar:", sistema.Contador + 1);
+        if (dato_str === null) {
+          consoleLog("Inserción cancelada");
+          return;
         }
         
-        
-        async function Manejar_Buscar() {
-            console.log("Botón Buscar presionado");
-            if (animacion_busqueda_activa) {
-                console.warn("Animación de búsqueda ya en curso.");
-                return;
-            }
-            if (sistema.Contador === 0) {
-                console.warn("No hay nodos para buscar");
-                await showCustomPrompt("No hay nodos para buscar.");
-                return;
-            }
-            
-            let id_str = await showCustomPrompt(`Buscar ID (1 a ${sistema.Contador}):`, nodo_actual_id + 1 > sistema.Contador ? 1 : nodo_actual_id + 1);
-            if (id_str === null) {
-                console.log("Búsqueda cancelada");
-                return;
-            }
-
-            let id_nodo_destino = parseInt(id_str);
-            if (isNaN(id_nodo_destino) || id_nodo_destino < 1 || id_nodo_destino > sistema.Contador) {
-                await showCustomPrompt(`ID ${id_str} no es válido.`);
-                return;
-            }
-            
-            if (id_nodo_destino === nodo_actual_id) {
-                console.log("Ya estás en ese nodo.");
-                return;
-            }
-
-            animacion_busqueda_activa = true;
-
-            let id_camino = nodo_actual_id;
-            
-            
-            
-            const step = 1;
-            const tiempo_paso = 100; 
-            
-
-            console.log(`Iniciando búsqueda de ${id_camino} a ${id_nodo_destino}`);
-
-            function proximo_paso() {
-                
-                
-                
-                id_camino += step;
-                
-                
-                
-                if (id_camino > sistema.Contador) {
-                    id_camino = 1;
-                }
-                
-                
-                let mesh_paso = Obtener_Mesh_Por_Id(id_camino);
-                
-                
-                if (mesh_paso) {
-                    Highlight_Nodo(mesh_paso);
-                }
-                
-                
-                
-
-                
-                if (id_camino === id_nodo_destino) {
-                    console.log(`Búsqueda finalizada en ID: ${id_camino}`);
-                    nodo_actual_id = id_camino; 
-                    animacion_busqueda_activa = false;
-                } else {
-                    
-                    setTimeout(proximo_paso, tiempo_paso);
-                }
-            }
-            
-            
-            setTimeout(proximo_paso, tiempo_paso);
+        let dato = parseInt(dato_str);
+        if (isNaN(dato)) {
+          dato = sistema.Contador + 1;
         }
         
+        sistema.Insertar(dato);
+        nodo_actual_id = sistema.Contador;
         
-        
-        document.getElementById('btn-insertar').addEventListener('click', Manejar_Insertar);
-        document.getElementById('btn-eliminar').addEventListener('click', Manejar_Eliminar);
-        document.getElementById('btn-buscar').addEventListener('click', Manejar_Buscar);
-
-        
+        consoleLog(`Nodo insertado con dato: ${dato}`);
         Reconstruir_Escena_3D();
-      
+      }
+
+      async function Manejar_Eliminar() {
+        consoleLog(">> Eliminar nodo");
         
-        camera.position.z = 20;
-        camera.position.y = 0;
-      
+        if (sistema.Contador === 0) {
+          consoleLog("No hay nodos para eliminar");
+          await showCustomPrompt("No hay nodos para eliminar.");
+          return;
+        }
         
-        let isDragging = false;
-        let previousMouseX = 0;
-        let previousMouseY = 0;
-        let rotationX = 0;
-        let rotationY = 0;
-      
+        let id_str = await showCustomPrompt(`ID del nodo a eliminar (1 a ${sistema.Contador}):`);
+        if (id_str === null) {
+          consoleLog("Eliminación cancelada");
+          return;
+        }
+
+        let id_nodo = parseInt(id_str);
+        if (isNaN(id_nodo)) {
+          consoleLog("ID inválido");
+          return;
+        }
         
-        renderer.domElement.addEventListener('mousedown', (e) => {
-          isDragging = true;
+        try {
+          const resultado = sistema.Eliminar_Nodo(id_nodo);
+          
+          if (resultado === true) {
+            consoleLog(`Nodo ${id_nodo} eliminado`);
+            
+            if (id_nodo === nodo_actual_id) {
+              nodo_actual_id = 1;
+            } else if (id_nodo < nodo_actual_id) {
+              nodo_actual_id--;
+            }
+            
+            Reconstruir_Escena_3D();
+          } else {
+            consoleLog(resultado);
+          }
+        } catch (e) {
+          consoleLog("Error: " + e.message);
+        }
+      }
+
+      async function Manejar_Buscar() {
+        consoleLog(">> Buscar nodo");
+        
+        if (animacion_busqueda_activa) {
+          consoleLog("Animación de búsqueda ya en curso");
+          return;
+        }
+        
+        if (sistema.Contador === 0) {
+          consoleLog("No hay nodos para buscar");
+          await showCustomPrompt("No hay nodos para buscar.");
+          return;
+        }
+        
+        let id_str = await showCustomPrompt(`Buscar ID (1 a ${sistema.Contador}):`, 
+          nodo_actual_id + 1 > sistema.Contador ? 1 : nodo_actual_id + 1);
+        if (id_str === null) {
+          consoleLog("Búsqueda cancelada");
+          return;
+        }
+
+        let id_nodo_destino = parseInt(id_str);
+        if (isNaN(id_nodo_destino) || id_nodo_destino < 1 || id_nodo_destino > sistema.Contador) {
+          consoleLog(`ID ${id_str} no es válido`);
+          await showCustomPrompt(`ID ${id_str} no es válido.`);
+          return;
+        }
+        
+        if (id_nodo_destino === nodo_actual_id) {
+          consoleLog("Ya estás en ese nodo");
+          return;
+        }
+
+        animacion_busqueda_activa = true;
+        let id_camino = nodo_actual_id;
+        const step = 1;
+        const tiempo_paso = 100;
+
+        consoleLog(`Buscando de ${id_camino} a ${id_nodo_destino}...`);
+
+        function proximo_paso() {
+          id_camino += step;
+          
+          if (id_camino > sistema.Contador) {
+            id_camino = 1;
+          }
+          
+          let mesh_paso = Obtener_Mesh_Por_Id(id_camino);
+          
+          if (mesh_paso) {
+            Highlight_Nodo(mesh_paso);
+          }
+
+          if (id_camino === id_nodo_destino) {
+            consoleLog(`Búsqueda finalizada en ID: ${id_camino}`);
+            nodo_actual_id = id_camino;
+            animacion_busqueda_activa = false;
+          } else {
+            setTimeout(proximo_paso, tiempo_paso);
+          }
+        }
+        
+        setTimeout(proximo_paso, tiempo_paso);
+      }
+
+
+      async function Manejar_Obtener_Id() {
+        consoleLog(">> Obtener ID de posición");
+        
+        if (sistema.Orbitas.length === 0) {
+          consoleLog("No hay órbitas");
+          return;
+        }
+
+        let orbita_str = await showCustomPrompt(`Número de órbita (0 a ${sistema.Orbitas.length - 1}):`);
+        if (orbita_str === null) {
+          consoleLog("Operación cancelada");
+          return;
+        }
+
+        let num_orbita = parseInt(orbita_str);
+        if (isNaN(num_orbita) || num_orbita < 0 || num_orbita >= sistema.Orbitas.length) {
+          consoleLog("Número de órbita inválido");
+          return;
+        }
+
+        let pos_str = await showCustomPrompt(`Posición en órbita (0 a ${sistema.Orbitas[num_orbita].Nodos.length - 1}):`);
+        if (pos_str === null) {
+          consoleLog("Operación cancelada");
+          return;
+        }
+
+        let posicion = parseInt(pos_str);
+        if (isNaN(posicion)) {
+          consoleLog("Posición inválida");
+          return;
+        }
+
+        try {
+          const id = sistema.Obtener_Id(num_orbita, posicion);
+          const nodo = sistema.Obtener(num_orbita, posicion);
+          consoleLog(`Órbita ${num_orbita}, Posición ${posicion} → ID: ${id}, Dato: ${nodo.Dato}`);
+          
+          const mesh = Obtener_Mesh_Por_Id(id);
+          if (mesh) {
+            Highlight_Nodo(mesh);
+            nodo_actual_id = id;
+          }
+        } catch (e) {
+          consoleLog("Error: " + e.message);
+        }
+      }
+
+      document.getElementById('btn-insertar').addEventListener('click', Manejar_Insertar);
+      document.getElementById('btn-eliminar').addEventListener('click', Manejar_Eliminar);
+      document.getElementById('btn-buscar').addEventListener('click', Manejar_Buscar);
+      document.getElementById('btn-obtener-id').addEventListener('click', Manejar_Obtener_Id);
+
+      Reconstruir_Escena_3D();
+    
+      camera.position.z = 20;
+      camera.position.y = 0;
+    
+      let isDragging = false;
+      let previousMouseX = 0;
+      let previousMouseY = 0;
+      let rotationX = 0;
+      let rotationY = 0;
+    
+      renderer.domElement.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        previousMouseX = e.clientX;
+        previousMouseY = e.clientY;
+      });
+
+      renderer.domElement.addEventListener('mousemove', (e) => {
+        if (isDragging) {
+          const deltaX = e.clientX - previousMouseX;
+          const deltaY = e.clientY - previousMouseY;
+          
+          rotationY += deltaX * 0.005;
+          rotationX += deltaY * 0.005;
+          
+          rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+          
           previousMouseX = e.clientX;
           previousMouseY = e.clientY;
-        });
-
-        renderer.domElement.addEventListener('mousemove', (e) => {
-          if (isDragging) {
-            const deltaX = e.clientX - previousMouseX;
-            const deltaY = e.clientY - previousMouseY;
-            
-            rotationY += deltaX * 0.005;
-            rotationX += deltaY * 0.005;
-            
-            rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
-            
-            previousMouseX = e.clientX;
-            previousMouseY = e.clientY;
-          }
-        });
-
-        renderer.domElement.addEventListener('mouseup', () => {
-          isDragging = false;
-        });
-
-        renderer.domElement.addEventListener('mouseleave', () => {
-          isDragging = false;
-        });
-
-        
-        let previousTouchX = 0;
-        let previousTouchY = 0;
-
-        renderer.domElement.addEventListener('touchstart', (e) => {
-          if (e.touches.length === 1) {
-            isDragging = true;
-            previousTouchX = e.touches[0].clientX;
-            previousTouchY = e.touches[0].clientY;
-          }
-        });
-
-        renderer.domElement.addEventListener('touchmove', (e) => {
-          if (isDragging && e.touches.length === 1) {
-            const deltaX = e.touches[0].clientX - previousTouchX;
-            const deltaY = e.touches[0].clientY - previousTouchY;
-            
-            rotationY += deltaX * 0.005;
-            rotationX += deltaY * 0.005;
-            
-            rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
-            
-            previousTouchX = e.touches[0].clientX;
-            previousTouchY = e.touches[0].clientY;
-            
-            e.preventDefault();
-          }
-        }, { passive: false }); 
-
-        renderer.domElement.addEventListener('touchend', () => {
-          isDragging = false;
-        });
-
-        
-        renderer.domElement.addEventListener('wheel', (e) => {
-          e.preventDefault();
-          
-          const zoomSpeed = 1;
-          const delta = e.deltaY > 0 ? 1 : -1;
-          
-          camera.position.z += delta * zoomSpeed;
-          
-          
-          camera.position.z = Math.max(5, Math.min(50, camera.position.z));
-        }, { passive: false });
-      
-        
-        function animate() {
-          requestAnimationFrame(animate);
-          
-          
-          const delta_time = 0.01; 
-          
-          orbitas_3d.forEach(orbita_info => {
-            orbita_info.angulo_actual += orbita_info.velocidad * delta_time;
-            
-            const angulo_base = (Math.PI * 2) / orbita_info.planetas.length;
-
-            orbita_info.planetas.forEach((planeta, idx) => {
-              const angulo_offset = angulo_base * idx;
-              const angulo = orbita_info.angulo_actual + angulo_offset;
-              
-              planeta.position.x = Math.cos(angulo) * orbita_info.radio;
-              planeta.position.z = Math.sin(angulo) * orbita_info.radio;
-            });
-          });
-          
-          
-          orbitGroup.rotation.y = rotationY;
-          orbitGroup.rotation.x = rotationX;
-          
-          renderer.render(scene, camera);
         }
-      
-        animate();
-      
-        
-        window.addEventListener('resize', () => {
-          camera.aspect = window.innerWidth / window.innerHeight;
-          camera.updateProjectionMatrix();
-          renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    }
-  </script>
-</body>
-</html>
+      });
 
+      renderer.domElement.addEventListener('mouseup', () => {
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('mouseleave', () => {
+        isDragging = false;
+      });
+
+      let previousTouchX = 0;
+      let previousTouchY = 0;
+
+      renderer.domElement.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          previousTouchX = e.touches[0].clientX;
+          previousTouchY = e.touches[0].clientY;
+        }
+      });
+
+      renderer.domElement.addEventListener('touchmove', (e) => {
+        if (isDragging && e.touches.length === 1) {
+          const deltaX = e.touches[0].clientX - previousTouchX;
+          const deltaY = e.touches[0].clientY - previousTouchY;
+          
+          rotationY += deltaX * 0.005;
+          rotationX += deltaY * 0.005;
+          
+          rotationX = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, rotationX));
+          
+          previousTouchX = e.touches[0].clientX;
+          previousTouchY = e.touches[0].clientY;
+          
+          e.preventDefault();
+        }
+      }, { passive: false });
+
+      renderer.domElement.addEventListener('touchend', () => {
+        isDragging = false;
+      });
+
+      renderer.domElement.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        
+        const zoomSpeed = 1;
+        const delta = e.deltaY > 0 ? 1 : -1;
+        
+        camera.position.z += delta * zoomSpeed;
+        camera.position.z = Math.max(5, Math.min(50, camera.position.z));
+      }, { passive: false });
+    
+      function animate() {
+        requestAnimationFrame(animate);
+        
+        const delta_time = 0.01;
+        
+        orbitas_3d.forEach(orbita_info => {
+          orbita_info.angulo_actual += orbita_info.velocidad * delta_time;
+          
+          const angulo_base = (Math.PI * 2) / orbita_info.planetas.length;
+
+          orbita_info.planetas.forEach((planeta, idx) => {
+            const angulo_offset = angulo_base * idx;
+            const angulo = orbita_info.angulo_actual + angulo_offset;
+            
+            planeta.position.x = Math.cos(angulo) * orbita_info.radio;
+            planeta.position.z = Math.sin(angulo) * orbita_info.radio;
+          });
+        });
+        
+        orbitGroup.rotation.y = rotationY;
+        orbitGroup.rotation.x = rotationX;
+        
+        renderer.render(scene, camera);
+      }
+    
+      animate();
+    
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    };
+  </script>
+</html>
