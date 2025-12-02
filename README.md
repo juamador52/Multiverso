@@ -17,7 +17,7 @@ La interfaz permite *insertar*, *eliminar*, *buscar*, y *obtener el ID* de cualq
 ## 🚀 Demo en línea
 
 Puedes ejecutar el proyecto directamente desde GitHub Pages aquí:  
-👉 **https://<TU-USUARIO>.github.io/<TU-REPO>**
+👉 **[https://<TU-USUARIO>.github.io/<TU-REPO>](https://juamador52.github.io/Multiverso/#-demo-en-l%C3%ADnea)**
 ---
 
 ## 🧩 Características principales
@@ -50,5 +50,7 @@ Puedes ejecutar el proyecto directamente desde GitHub Pages aquí:
 - Juan David Amado Rubio  
 - Pablo Andrés Beltrán Perez  
 - Jesús David Cáceres Fonseca  
-- David Nickolai Parra Ariza 
+- David Nickolai Parra Ariza
+
+
 ---
