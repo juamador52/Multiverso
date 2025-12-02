@@ -23,7 +23,7 @@ Puedes ejecutar el proyecto directamente desde GitHub Pages aquí:
 ## 🧩 Características principales
 
 ### 🔧 Estructura de datos implementada
-- Uso de una estructura tipo **órbitas circulares** (listas doblemente enlazadas y nodos con referencia orbital).
+- Uso de una estructura tipo **órbitas circulares** (listas enlazadas y nodos con referencia orbital).
 - Cada órbita tiene:
   - Capacidad dinámica
   - Nodos iniciales obligatorios
