@@ -6,7 +6,6 @@ class Nodo:
         self.Dato = dato
         self.Vacio = vacio
         self.Siguiente = None
-        self.Anterior = None
         self.Orb_Anterior = None
         self.Orb_Siguiente = None
 
@@ -18,10 +17,10 @@ class Orbita:
         self.Capacidad = capacidad
         self.Nodos = []
         self.Final = None
-        self.Tamaño = 0  #para saber la cantidad de nodos 
+        self.Tamaño = 0 
         #Debe iniciar con 3 nodos independiente de la capacidad
         #Asi se evita punteros en ambas direcciones
-        for _ in range(3):
+        for i in range(3):
              self.Agregar_Nodo(None, True)
 
     def Agregar_Nodo(self, dato, vacio=False):
@@ -41,17 +40,14 @@ class Orbita:
         else:
             primero = self.Nodos[0]
             ultimo = self.Final
-            nuevo.Anterior = ultimo
             nuevo.Siguiente = primero
             ultimo.Siguiente = nuevo
-            primero.Anterior = nuevo
 
         self.Final = nuevo
         self.Nodos.append(nuevo)
         self.Tamaño = len(self.Nodos)
         return True
 
-    #le ponemos posicion por defecto?
     def Obtener_Nodo(self, posicion):
         if not self.Nodos:
             return None
@@ -62,10 +58,8 @@ class Orbita:
         datos = [str(n.Dato) for n in self.Nodos]
         return "[" + ", ".join(datos) + "]"
     
-#O lo llamamos simplemente Orbitas?
 class Sistema_Orbitas:
     def __init__(self, capacidad = 3):
-        #no pongo error ya que lo mandara al intentar crear la orbita
         self.Orbitas = []
         self.Capacidad = capacidad
         self.Contador = 0
@@ -87,7 +81,6 @@ class Sistema_Orbitas:
 
     def Insertar(self, dato):
         if not self.Orbitas:
-        #si borra las orbitas  crea una nueva con la capacidad
             self.Crear_Orbita(self.Capacidad)
         
         actual = self.Orbitas[-1]
@@ -126,7 +119,7 @@ class Sistema_Orbitas:
             acumulado += len(orb.Nodos)
         raise ValueError("id fuera de rango")
 
-#por ahora sera la unica que use tanto id como posicion orbita para funcionar
+
     def Obtener(self, *args):
         if len(args) == 1:
             id_nodo = args[0]
@@ -174,7 +167,7 @@ class Sistema_Orbitas:
         nodo = orb.Obtener_Nodo(pos)
 
         # si tiene 3 o menos nodos solo lo marcamos vacio
-        if len(orb.Nodos) <= 3:#Sera que pongo un error si ya esta vacio?
+        if len(orb.Nodos) <= 3:
             if all(n.Vacio for n in orb.Nodos[:3]):
                 return "la orbita está vacía"
             nodo.Dato = None
@@ -191,7 +184,6 @@ class Sistema_Orbitas:
         if orb.Nodos:
             for i, n in enumerate(orb.Nodos):
                 n.Siguiente = orb.Nodos[(i + 1) % len(orb.Nodos)]
-                n.Anterior = orb.Nodos[(i - 1) % len(orb.Nodos)]
             orb.Final = orb.Nodos[-1]
 
         # punteros hacia otras orbitas
@@ -214,21 +206,19 @@ class Sistema_Orbitas:
     
     def Mostrar(self):
         texto = ""
-        for i, o in enumerate(self.Orbitas): 
+        for i, o in enumerate(self.Orbitas):
             texto += f"orbita {i} (cap {o.Capacidad}): {o.Mostrar()}\n"
         return texto.strip()
 
-    #si algo se podria usar para mostrar el camino entre nodos
     def Recorrer(self, id_origen, id_destino, impresion=True):
         origen = self.Obtener(id_origen)
         destino = self.Obtener(id_destino)
 
         recorrido = []
         nodo_actual = origen
-        avanzar = id_destino > id_origen  # direcion del recorrido
+        avanzar = id_destino > id_origen
 
         while True:
-            #para añadir los nodos recorridos
             if nodo_actual == origen or nodo_actual == destino:
                 recorrido.append(f"[{nodo_actual.Dato}]")
             else:
@@ -251,97 +241,4 @@ class Sistema_Orbitas:
         if impresion:
             print(" -> ".join(recorrido))
         return recorrido
-# ------------------ prueba ------------------
-
-sistema = Sistema_Orbitas(3)
-
-# 9 elementos 
-for i in range(9):
-    sistema.Insertar(i)
-
-print("Estado inicial del sistema:")
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# obtener un nodo por id
-print("Obtener nodo por id 5:")
-try:
-    nodo_5 = sistema.Obtener(5)
-    print("Dato nodo 5:", nodo_5.Dato)
-except ValueError as e:
-    print(e)
-print("---------------------------------------------------")
-
-# obtener un nodo orbita,posicion
-print("Obtener nodo órbita 2, posición 1:")
-try:
-    nodo_2_1 = sistema.Obtener(2, 1)
-    print("Dato nodo 2-1:", nodo_2_1.Dato)
-except ValueError as e:
-    print(e)
-print("---------------------------------------------------")
-
-# eliminar un nodo
-print("Eliminando nodo 3:")
-res = sistema.Eliminar_Nodo(3)
-print("Resultado:", res)
-print("Estado después de eliminar nodo 3:")
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# eliminar un nodo >3
-print("Eliminando nodo 1 (órbita inicial de 3 nodos):")
-res = sistema.Eliminar_Nodo(1)
-print("Resultado:", res)
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# eliminar varios nodos hasta que la obita quede vacia
-print("Eliminando nodos 2 y 3 (de la órbita inicial):")
-print("Eliminar 2:", sistema.Eliminar_Nodo(2))
-print("Eliminar 3:", sistema.Eliminar_Nodo(3))
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# recorrer
-print("Recorrer de nodo 4 a nodo 7 (distintas órbitas):")
-sistema.Recorrer(4, 7)
-print("---------------------------------------------------")
-
-# recorrer de manera circular
-print("Recorrer de nodo 7 a nodo 4 (misma orbita):")
-sistema.Recorrer(7, 4)
-print("---------------------------------------------------")
-
-# recorrer hacia atras
-print("Recorrer de nodo 7 a nodo 4 ( orbita diferente):")
-sistema.Recorrer(8, 2)
-print("---------------------------------------------------")
-
-# intentar obtener nodo con id invalido
-print("Intentar obtener nodo id 20 (fuera de rango):")
-try:
-    sistema.Obtener(20)
-except ValueError as e:
-    print("Error:", e)
-print("---------------------------------------------------")
-
-# eliminar orbita
-print("Eliminar última órbita:")
-sistema.Eliminar_Orbita()
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# eliminar orbita
-print("Eliminar órbita 0 y todas las posteriores:")
-sistema.Eliminar_Orbita(0)
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
-# insertar después de eliminar
-print("Insertar nodo 100 después de eliminar órbitas:")
-sistema.Insertar(100)
-print(sistema.Mostrar())
-print("---------------------------------------------------")
-
 
