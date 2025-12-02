@@ -4,8 +4,7 @@
 Este proyecto representa un **multiverso** donde cada universo está organizado en **órbitas de nodos**, cumpliendo con las siguientes características:
 
 ✔ Cada universo puede conectar hasta 6 universos  
-✔ Las conexiones son **unidireccionales**  
-✔ **No se puede volver atrás** al viajar  
+✔ Las conexiones son **unidireccionales**   
 ✔ Mínimo **36 universos**  
 ✔ Tamaño ilimitado, con opción de **crear** y **destruir**  
 ✔ Visualización 3D totalmente interactiva  
